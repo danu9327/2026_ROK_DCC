@@ -91,9 +91,9 @@ PRESET_CHARACTERS = {
 # =====================================================================
 # 모델 로드
 # =====================================================================
-#DEFAULT_MODEL = "yanolja/EEVE-Korean-Instruct-10.8B-v1.0"
+DEFAULT_MODEL = "yanolja/EEVE-Korean-Instruct-10.8B-v1.0"
 #DEFAULT_MODEL = "yanolja/YanoljaNEXT-EEVE-Instruct-7B-v2-Preview"
-DEFAULT_MODEL = "yanolja/YanoljaNEXT-EEVE-Instruct-2.8B"
+#DEFAULT_MODEL = "yanolja/YanoljaNEXT-EEVE-Instruct-2.8B"
 
 
 def _model_load_kwargs():
