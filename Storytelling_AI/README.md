@@ -9,20 +9,34 @@
 # 1. 패키지 설치
 pip install -r requirements.txt
 
-# 2. 데이터 구경 (5분)
-python 01_explore_data.py
+# 2. LLM의 주요 알고리즘 실습!
+Lab1_Transformer_LLM 코드북으로 실습!
 
-# 4. 웹 챗봇 실행!
-python 02_chat_app.py
+# 4. LLM의 효율적인 학습방법 비교 !
+Lab2_LoRA_FineTuning 코드북으로 비교!
 ```
 
-> 💡 GPU 없어도 `02_chat_app.py`는 베이스 모델로 바로 실행 가능!
+"""
+> 🎭 AI 캐릭터 챗봇 — 한국어 특화 (EXAONE 3.5) + VRAM 5단계 자동 감지
 
-## 📁 파일 구조
-```
-01_explore_data.py  ← 데이터셋 탐색
-02_chat_app.py      ← 🎮 웹 캐릭터 챗봇 (메인!)
-```
+## 모델: LG AI Research EXAONE 3.5 (한국어-영어 이중언어 전용, 중국어 없음)
+
+# VRAM 프로필:
+    (안됨)minimal → EXAONE 2.4B (4bit)    ~2.5GB   ← 4GB VRAM 이하
+    4gb     → EXAONE 2.4B (FP16)    ~5.5GB   ← 6~8GB VRAM
+    (안됨)8gb     → EXAONE 7.8B (4bit)    ~6GB     ← 8~12GB VRAM
+    14gb    → EXAONE 7.8B (FP16)    ~16GB    ← 14~20GB VRAM
+    (안됨)24gb    → EXAONE 32B  (4bit)    ~20GB    ← 24GB+ VRAM
+
+# 실행:
+    python chat_app.py                      # VRAM 자동 감지
+    python chat_app.py --profile 4gb        # 수동 선택
+    python chat_app.py --profile 14gb       # 7.8B FP16
+    python chat_app.py --checkpoint ./lora  # LoRA 적용
+    python chat_app.py --share              # 외부 접속 허용
+
+⚠️ 필수: pip install transformers>=4.43.0 torch gradio accelerate bitsandbytes peft
+"""
 
 ## 🎮 주요 기능
 - **프리셋 캐릭터**: 츤데레 카페사장, 타임슬립 조선무관, 심해탐험 AI 등
@@ -31,11 +45,6 @@ python 02_chat_app.py
 - **대화 기억**: 최근 대화 맥락을 유지하며 자연스러운 대화
 
 ## 💻 환경
-- 많이 무거운 모델 VRAM 최소 24GB "yanolja/EEVE-Korean-Instruct-10.8B-v1.0"
-- 좀 무거운 모델 VRAM 최소 18GB "yanolja/YanoljaNEXT-EEVE-Instruct-7B-v2-Preview"
-- 가벼운 모델 VRAM 최소 8GB "yanolja/YanoljaNEXT-EEVE-Instruct-2.8B"
-
-## 💻 환경
 - Python 3.9+
-- GPU: 파인튜닝 시 VRAM 6GB+ 권장
-- CPU: 추론(채팅)만 가능 (느리지만 동작)
+- GPU: VRAM 6GB+ 권장
+- CPU: 추론(채팅)만 가능 (매우매우 느리지만 동작)
