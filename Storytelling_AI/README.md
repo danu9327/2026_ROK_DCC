@@ -44,7 +44,7 @@ Lab2_LoRA_FineTuning 다운로드 받아서 Colab으로!
 
 ## 접속서버
 
-1. https://51e3283b5b87988917.gradio.live
+1. https://fda0128767cad57543.gradio.live
 2.
 3.
 4.
