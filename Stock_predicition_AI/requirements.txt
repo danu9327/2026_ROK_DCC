@@ -1,7 +1,9 @@
-finance-datareader==0.9.90
-pandas>=1.5.0
-numpy>=1.21.0
-matplotlib>=3.5.0
-scikit-learn>=1.0.2
-shap>=0.41.0
-jupyter>=1.0.0
+pandas
+numpy
+matplotlib
+seaborn
+statsmodels
+scikit-learn
+streamlit
+yfinance
+xgboost
