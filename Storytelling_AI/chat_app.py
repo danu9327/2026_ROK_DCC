@@ -506,7 +506,7 @@ def main():
     )
     parser.add_argument(
         "--profile", type=str, choices=["minimal", "4gb", "8gb", "14gb", "24gb", "auto"],
-        default="auto",
+        default="14gb",
         help="VRAM 프로필 (기본: auto)\n"
              "  minimal → EXAONE 2.4B 4bit  (~2.5GB)\n"
              "  4gb     → EXAONE 2.4B FP16  (~5.5GB)\n"
@@ -534,13 +534,21 @@ def main():
     model_id = args.model if args.model else profile.model_id
     use_4bit = profile.use_4bit if not args.no_4bit else False
 
-    # transformers 버전 체크
+    # transformers 버전 체크 (튜플 정수 비교로 문자열 비교 버그 방지)
     import transformers
-    tv = transformers.__version__
-    if tv < "4.43.0":
-        print(f"\n⚠️  transformers {tv} 감지. EXAONE 3.5는 4.43.0 이상 필요!")
+    tv = tuple(int(x) for x in transformers.__version__.split(".")[:3])
+    if tv < (4, 43, 0):
+        print(f"\n⚠️  transformers {transformers.__version__} 감지. EXAONE 3.5는 4.43.0 이상 필요!")
         print(f"   실행: pip install transformers>=4.43.0 --upgrade\n")
         return
+
+    # PyTorch 버전 체크 (4-bit 양자화는 2.1+ 필요)
+    torch_tv = tuple(int(x) for x in torch.__version__.split(".")[:2])
+    if use_4bit and torch_tv < (2, 1):
+        print(f"\n⚠️  PyTorch {torch.__version__} 감지.")
+        print(f"   4-bit 양자화(bitsandbytes)는 PyTorch 2.1 이상이 필요합니다.")
+        print(f"   → --no-4bit 플래그로 자동 전환합니다.\n")
+        use_4bit = False
 
     model, tokenizer = load_model(model_id, use_4bit, args.checkpoint)
     app = create_app(model, tokenizer, profile, use_streaming=not args.no_streaming)

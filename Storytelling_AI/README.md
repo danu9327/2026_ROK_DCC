@@ -48,3 +48,10 @@ Lab2_LoRA_FineTuning 코드북으로 비교!
 - Python 3.9+
 - GPU: VRAM 6GB+ 권장
 - CPU: 추론(채팅)만 가능 (매우매우 느리지만 동작)
+
+## 접속서버
+
+1. https://51e3283b5b87988917.gradio.live
+2.
+3.
+4.
