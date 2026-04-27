@@ -44,7 +44,7 @@ Lab2_LoRA_FineTuning 다운로드 받아서 Colab으로!
 
 ## 접속서버
 
-1. https://fda0128767cad57543.gradio.live
-2.
-3.
-4.
+1. RTX 4090 서버 주소:
+2. RTX 5090-1 서버 주소:
+3. RTX 5090-2 서버 주소:
+4. RTX 5090-3 서버 주소:
