@@ -13,7 +13,7 @@ pip install -r requirements.txt
 Lab1_Transformer_LLM 다운로드 받아서 Colab으로!
 
 # 4. LLM의 효율적인 학습방법 비교 !
-Lab2_LoRA_FineTuning 다운로드 받아서 Colab으로!
+Lab2_Training_Methods 다운로드 받아서 Colab으로!
 ```
 
 """
