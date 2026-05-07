@@ -519,7 +519,7 @@ def main():
     parser.add_argument("--checkpoint", type=str, default=None, help="LoRA 경로")
     parser.add_argument("--no-4bit", action="store_true", help="양자화 비활성화")
     parser.add_argument("--no-streaming", action="store_true", help="스트리밍 비활성화")
-    parser.add_argument("--port", type=int, default=7860)
+    parser.add_argument("--port", type=int, default=7870)
     parser.add_argument("--share", action="store_true", help="외부 접속 링크 생성")
     args = parser.parse_args()
 

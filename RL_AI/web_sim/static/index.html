@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자율주행 AI 시뮬레이터</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3347;
+  --text: #e4e6f0;
+  --text2: #8b8fa8;
+  --accent: #4f8cff;
+  --accent2: #6c5ce7;
+  --green: #00d68f;
+  --red: #ff4757;
+  --orange: #ffa502;
+  --gold: #ffd32a;
+  --cyan: #18dcff;
+  --font: 'Noto Sans KR', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* ── 설정 화면 ── */
+#config-screen {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 40px 20px;
+  background: radial-gradient(ellipse at top, #1a1d2f 0%, var(--bg) 70%);
+}
+.config-title {
+  font-size: 2.2rem; font-weight: 900; letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.config-subtitle { color: var(--text2); font-size: 0.95rem; margin-bottom: 32px; }
+
+.step-indicator {
+  display: flex; gap: 8px; margin-bottom: 40px;
+}
+.step-dot {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem;
+  background: var(--surface); border: 2px solid var(--border); color: var(--text2);
+  transition: all 0.3s;
+}
+.step-dot.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.step-dot.done { background: var(--green); border-color: var(--green); color: #fff; }
+
+.config-section { display: none; width: 100%; max-width: 800px; }
+.config-section.active { display: block; }
+.section-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 24px; color: var(--text); }
+
+/* 파라미터 카드 */
+.param-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 20px 24px; margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: border-color 0.2s;
+}
+.param-card:hover { border-color: var(--accent); }
+.param-info h3 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+.param-info p { font-size: 0.8rem; color: var(--text2); }
+.param-control { display: flex; align-items: center; gap: 12px; }
+.param-btn {
+  width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text); font-size: 1.2rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.param-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.param-value {
+  font-family: var(--mono); font-size: 1.6rem; font-weight: 700;
+  color: var(--accent); min-width: 50px; text-align: center;
+}
+
+/* 보상 함수 카드 */
+.reward-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.reward-card {
+  background: var(--surface); border: 2px solid var(--border); border-radius: 14px;
+  padding: 16px; cursor: pointer; transition: all 0.2s; position: relative;
+}
+.reward-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.reward-card.selected { border-color: var(--green); background: rgba(0,214,143,0.08); }
+.reward-card .icon { font-size: 1.8rem; margin-bottom: 8px; }
+.reward-card h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+.reward-card p { font-size: 0.75rem; color: var(--text2); line-height: 1.4; }
+.reward-card .check {
+  position: absolute; top: 10px; right: 10px; width: 22px; height: 22px;
+  border-radius: 50%; border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: 0.7rem;
+}
+.reward-card.selected .check { background: var(--green); border-color: var(--green); color: #fff; }
+
+/* 트랙 선택 */
+.track-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.track-card {
+  background: var(--surface); border: 2px solid var(--border); border-radius: 14px;
+  overflow: hidden; cursor: pointer; transition: all 0.2s;
+}
+.track-card:hover { border-color: var(--accent); }
+.track-card.selected { border-color: var(--green); }
+.track-card img { width: 100%; height: 160px; object-fit: cover; }
+.track-card .name { padding: 10px 14px; font-weight: 600; font-size: 0.9rem; }
+
+/* 버튼 */
+.btn-row { display: flex; gap: 12px; margin-top: 32px; justify-content: center; }
+.btn {
+  padding: 12px 32px; border-radius: 12px; border: none;
+  font-family: var(--font); font-size: 1rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #3a7aff; transform: translateY(-1px); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--text2); }
+
+/* ── 시뮬레이션 화면 ── */
+#sim-screen { display: none; height: 100vh; }
+.sim-layout { display: flex; height: 100%; }
+.sim-canvas-wrap { flex: 1; position: relative; background: #000; overflow: hidden; }
+#simCanvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+/* HUD */
+.hud {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(15,17,23,0.9) 0%, rgba(15,17,23,0) 100%);
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.hud-stat {
+  font-family: var(--mono); font-size: 0.8rem; color: var(--text2);
+}
+.hud-stat span { color: var(--text); font-weight: 600; }
+.hud-controls { margin-left: auto; display: flex; gap: 8px; }
+.hud-btn {
+  padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(26,29,39,0.8); color: var(--text); font-size: 0.8rem;
+  font-family: var(--font); cursor: pointer; backdrop-filter: blur(8px);
+  transition: all 0.15s;
+}
+.hud-btn:hover { background: var(--accent); border-color: var(--accent); }
+.hud-btn.active { background: var(--orange); border-color: var(--orange); color: #000; }
+
+/* 우측 패널 */
+.side-panel {
+  width: 320px; background: var(--surface); border-left: 1px solid var(--border);
+  padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;
+}
+.panel-title {
+  font-size: 0.85rem; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.panel-card {
+  background: var(--surface2); border-radius: 10px; padding: 12px;
+}
+.panel-card h4 { font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--text2); }
+.panel-card canvas { width: 100%; border-radius: 6px; }
+.stat-row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 3px 0; }
+.stat-row .label { color: var(--text2); }
+.stat-row .value { font-family: var(--mono); font-weight: 600; }
+.stat-row .value.green { color: var(--green); }
+.stat-row .value.blue { color: var(--accent); }
+.stat-row .value.red { color: var(--red); }
+.stat-row .value.orange { color: var(--orange); }
+
+.ga-composition { display: flex; gap: 4px; height: 20px; border-radius: 6px; overflow: hidden; margin-top: 6px; }
+.ga-bar { transition: flex 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 600; color: #fff; }
+
+.reward-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.reward-tag {
+  padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+  background: rgba(79,140,255,0.15); color: var(--accent);
+}
+
+/* 반응형 */
+@media (max-width: 900px) {
+  .side-panel { width: 260px; }
+}
+@media (max-width: 700px) {
+  .sim-layout { flex-direction: column; }
+  .side-panel { width: 100%; height: 40vh; border-left: none; border-top: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- 설정 화면 -->
+<!-- ══════════════════════════════════════════ -->
+<div id="config-screen">
+  <div class="config-title">자율주행 AI 시뮬레이터</div>
+  <div class="config-subtitle">유전 알고리즘으로 자동차의 신경망을 진화시킵니다</div>
+
+  <div class="step-indicator">
+    <div class="step-dot active" id="step1">1</div>
+    <div class="step-dot" id="step2">2</div>
+    <div class="step-dot" id="step3">3</div>
+  </div>
+
+  <!-- Step 1: 파라미터 -->
+  <div class="config-section active" id="sec-params">
+    <div class="section-title">STEP 1 — 학습 파라미터</div>
+    <div class="param-card">
+      <div class="param-info">
+        <h3>🚗 자동차 수 (인구 크기)</h3>
+        <p>동시에 학습하는 자동차 대수</p>
+      </div>
+      <div class="param-control">
+        <button class="param-btn" onclick="adjustParam('cars',-1)">−</button>
+        <div class="param-value" id="val-cars">10</div>
+        <button class="param-btn" onclick="adjustParam('cars',1)">+</button>
+      </div>
+    </div>
+    <div class="param-card">
+      <div class="param-info">
+        <h3>📡 센서 수 (입력 차원)</h3>
+        <p>각 자동차의 벽 감지 센서 개수</p>
+      </div>
+      <div class="param-control">
+        <button class="param-btn" onclick="adjustParam('sensors',-1)">−</button>
+        <div class="param-value" id="val-sensors">5</div>
+        <button class="param-btn" onclick="adjustParam('sensors',1)">+</button>
+      </div>
+    </div>
+    <div class="param-card">
+      <div class="param-info">
+        <h3>🎲 랜덤 시드 (재현성)</h3>
+        <p>같은 시드 → 같은 초기 조건 → 비교 실험 가능</p>
+      </div>
+      <div class="param-control">
+        <button class="param-btn" onclick="adjustParam('seed',-1)">−</button>
+        <div class="param-value" id="val-seed">42</div>
+        <button class="param-btn" onclick="adjustParam('seed',1)">+</button>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goStep(2)">다음 →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: 보상 함수 -->
+  <div class="config-section" id="sec-reward">
+    <div class="section-title">STEP 2 — 보상 함수 선택</div>
+    <p style="color:var(--text2);font-size:0.85rem;margin-bottom:16px;">
+      보상 함수 = AI가 "잘 했는지" 판단하는 기준. 같은 환경이라도 보상에 따라 완전히 다른 행동을 학습합니다.
+    </p>
+    <div class="reward-grid" id="reward-grid"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(1)">← 이전</button>
+      <button class="btn btn-primary" onclick="goStep(3)">다음 →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: 트랙 선택 -->
+  <div class="config-section" id="sec-track">
+    <div class="section-title">STEP 3 — 트랙 선택</div>
+    <p style="color:var(--text2);font-size:0.85rem;margin-bottom:16px;">
+      트랙 이미지를 선택하거나 업로드하세요. 검은색=벽, 흰색=도로, 빨간색=결승선
+    </p>
+    <div class="track-grid" id="track-grid"></div>
+    <div style="margin-top:16px;">
+      <label class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:8px;">
+        📁 트랙 이미지 업로드
+        <input type="file" accept="image/*" id="track-upload" style="display:none" onchange="handleTrackUpload(event)">
+      </label>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(2)">← 이전</button>
+      <button class="btn btn-primary" onclick="startSimulation()">🚀 시뮬레이션 시작</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- 시뮬레이션 화면 -->
+<!-- ══════════════════════════════════════════ -->
+<div id="sim-screen">
+  <div class="sim-layout">
+    <div class="sim-canvas-wrap">
+      <canvas id="simCanvas"></canvas>
+      <div class="hud">
+        <div class="hud-stat">Gen <span id="hud-gen">1</span></div>
+        <div class="hud-stat">Step <span id="hud-step">0</span>/<span id="hud-maxstep">1500</span></div>
+        <div class="hud-stat">Alive <span id="hud-alive">0</span></div>
+        <div class="hud-stat">Finish <span id="hud-finish" style="color:var(--green)">0</span></div>
+        <div class="hud-stat">Crash <span id="hud-crash" style="color:var(--red)">0</span></div>
+        <div class="hud-controls">
+          <button class="hud-btn" id="btn-pause" onclick="togglePause()">⏸ 일시정지</button>
+          <button class="hud-btn" id="btn-speed" onclick="cycleSpeed()">×1</button>
+          <button class="hud-btn" onclick="resetSim()">↺ 리셋</button>
+          <button class="hud-btn" onclick="backToConfig()">⚙ 설정</button>
+        </div>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="panel-title">📊 학습 대시보드</div>
+
+      <div class="panel-card">
+        <h4>세대별 적합도</h4>
+        <canvas id="chart-fitness" height="120"></canvas>
+      </div>
+
+      <div class="panel-card">
+        <h4>세대별 완주 수</h4>
+        <canvas id="chart-finish" height="70"></canvas>
+      </div>
+
+      <div class="panel-card" id="ga-info-card">
+        <h4>🧬 세대 구성 (GA 연산)</h4>
+        <div class="ga-composition" id="ga-comp"></div>
+        <div id="ga-details" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="panel-card">
+        <h4>📈 현재 통계</h4>
+        <div id="stats-area"></div>
+      </div>
+
+      <div class="panel-card">
+        <h4>🎯 보상 함수</h4>
+        <div class="reward-tags" id="active-rewards"></div>
+      </div>
+
+      <div class="panel-card">
+        <h4>⏱ 경과 시간</h4>
+        <div id="elapsed-time" style="font-family:var(--mono);font-size:1.1rem;font-weight:700;">0:00</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// 설정 상태
+// ════════════════════════════════════════════════════════════════
+const CONFIG = { cars: 10, sensors: 5, seed: 42, rewards: new Set(['max_dist']), trackUrl: null, trackName: null, trackStartPos: null };
+const REWARDS = [
+  { id:'max_dist', name:'최대 도달 거리', desc:'시작점에서 가장 멀리 간 직선거리를 보상', icon:'🎯', color:'#4f8cff' },
+  { id:'cumulative', name:'누적 이동 거리', desc:'총 이동한 경로 길이를 합산하여 보상', icon:'〰️', color:'#00d68f' },
+  { id:'survival', name:'생존 시간', desc:'충돌 없이 오래 살아남을수록 보상', icon:'❤️', color:'#ff4757' },
+  { id:'wall_avoid', name:'벽 회피 보상', desc:'센서 평균 거리가 클수록 보상', icon:'🛡️', color:'#ffa502' },
+  { id:'straight', name:'직진 보상', desc:'조향이 적을수록 보상 (효율적 주행)', icon:'➡️', color:'#6c5ce7' },
+];
+
+// ── 설정 UI ──
+function adjustParam(key, delta) {
+  const limits = { cars:[2,30], sensors:[2,12], seed:[0,9999] };
+  CONFIG[key] = Math.max(limits[key][0], Math.min(limits[key][1], CONFIG[key]+delta));
+  document.getElementById(`val-${key}`).textContent = CONFIG[key];
+}
+
+function goStep(n) {
+  document.querySelectorAll('.config-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.step-dot').forEach((d,i) => {
+    d.classList.remove('active','done');
+    if(i+1 < n) d.classList.add('done');
+    if(i+1 === n) d.classList.add('active');
+  });
+  ['sec-params','sec-reward','sec-track'][n-1] && document.getElementById(['sec-params','sec-reward','sec-track'][n-1]).classList.add('active');
+  if(n===3) loadTracks();
+}
+
+// 보상 함수 카드 생성
+(function initRewardCards(){
+  const grid = document.getElementById('reward-grid');
+  REWARDS.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'reward-card' + (CONFIG.rewards.has(r.id)?' selected':'');
+    card.innerHTML = `<div class="check">${CONFIG.rewards.has(r.id)?'✓':''}</div>
+      <div class="icon">${r.icon}</div><h4>${r.name}</h4><p>${r.desc}</p>`;
+    card.onclick = () => {
+      if(CONFIG.rewards.has(r.id)) { if(CONFIG.rewards.size>1) CONFIG.rewards.delete(r.id); }
+      else CONFIG.rewards.add(r.id);
+      card.classList.toggle('selected', CONFIG.rewards.has(r.id));
+      card.querySelector('.check').textContent = CONFIG.rewards.has(r.id)?'✓':'';
+    };
+    grid.appendChild(card);
+  });
+})();
+
+// 트랙 로드
+function loadTracks() {
+  fetch('/api/tracks').then(r=>r.json()).then(tracks => {
+    const grid = document.getElementById('track-grid');
+    grid.innerHTML = '';
+    if(tracks.length === 0) {
+      grid.innerHTML = '<p style="color:var(--text2)">static/tracks/ 폴더에 트랙 이미지(.png)를 넣어주세요</p>';
+      return;
+    }
+    tracks.forEach((t,i) => {
+      const card = document.createElement('div');
+      card.className = 'track-card' + (i===0?' selected':'');
+      card.innerHTML = `<img src="${t.url}" alt="${t.name}"><div class="name">${t.name}</div>`;
+      card.onclick = () => {
+        document.querySelectorAll('.track-card').forEach(c=>c.classList.remove('selected'));
+        card.classList.add('selected');
+        CONFIG.trackUrl = t.url;
+        CONFIG.trackName = t.url.split('/').pop(); // 파일명 저장
+      };
+      if(i===0) { 
+        CONFIG.trackUrl = t.url; 
+        CONFIG.trackName = t.url.split('/').pop(); 
+      }
+      grid.appendChild(card);
+    });
+  });
+}
+
+function handleTrackUpload(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  CONFIG.trackUrl = url;
+  CONFIG.trackName = file.name; // 실제 파일명 저장
+  const grid = document.getElementById('track-grid');
+  document.querySelectorAll('.track-card').forEach(c=>c.classList.remove('selected'));
+  const card = document.createElement('div');
+  card.className = 'track-card selected';
+  card.innerHTML = `<img src="${url}" alt="${file.name}"><div class="name">${file.name} (업로드)</div>`;
+  grid.appendChild(card);
+}
+
+// ════════════════════════════════════════════════════════════════
+// 시뮬레이션 엔진
+// ════════════════════════════════════════════════════════════════
+const SENSOR_LEN = 150, MAX_SPEED = 3, MAX_STEPS = 1500;
+const STAG_INTERVAL = 60, STAG_MIN_DISP = 30, STAG_MIN_ANGLE = 0.3;
+
+let trackImg = null, trackData = null, trackW = 0, trackH = 0;
+let sim = null, animId = null;
+
+// ── 시드 기반 난수 ──
+class SeededRNG {
+  constructor(seed) { this.s = seed % 2147483647; if(this.s<=0) this.s += 2147483646; }
+  next() { this.s = this.s * 16807 % 2147483647; return (this.s-1) / 2147483646; }
+  randn() { let u=0,v=0; while(u===0) u=this.next(); while(v===0) v=this.next(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+}
+
+// ── 신경망 ──
+class CarBrain {
+  constructor(nSensors, w1,b1,w2,b2) {
+    this.n = nSensors;
+    this.h = Math.max(8, nSensors*2);
+    if(!w1) {
+      this.w1 = Array.from({length:this.n*this.h}, ()=>rng.randn()*Math.sqrt(2/this.n));
+      this.b1 = new Float64Array(this.h);
+      this.w2 = Array.from({length:this.h*2}, ()=>rng.randn()*Math.sqrt(2/this.h));
+      this.b2 = new Float64Array(2);
+    } else { this.w1=[...w1]; this.b1=new Float64Array(b1); this.w2=[...w2]; this.b2=new Float64Array(b2); }
+  }
+  copy() { return new CarBrain(this.n, this.w1, this.b1, this.w2, this.b2); }
+  forward(inp) {
+    const hidden = new Float64Array(this.h);
+    for(let j=0;j<this.h;j++) {
+      let s=this.b1[j]; for(let i=0;i<this.n;i++) s+=inp[i]*this.w1[i*this.h+j];
+      hidden[j]=Math.max(0,s);
+    }
+    const out = [this.b2[0], this.b2[1]];
+    for(let j=0;j<this.h;j++) { out[0]+=hidden[j]*this.w2[j*2]; out[1]+=hidden[j]*this.w2[j*2+1]; }
+    const mx=Math.max(out[0],out[1]); const e0=Math.exp(out[0]-mx), e1=Math.exp(out[1]-mx);
+    const s=e0+e1; return [e0/s, e1/s];
+  }
+  mutate(rate=0.15,str=0.2) {
+    const b=this.copy();
+    const mutArr=(a)=>a.map(v=>rng.next()<rate?v+rng.randn()*str:v);
+    b.w1=mutArr(b.w1); b.b1=Float64Array.from(mutArr([...b.b1]));
+    b.w2=mutArr(b.w2); b.b2=Float64Array.from(mutArr([...b.b2]));
+    return b;
+  }
+  crossover(other) {
+    const b=this.copy();
+    b.w1=b.w1.map((v,i)=>rng.next()<0.5?v:other.w1[i]);
+    b.b1=Float64Array.from([...b.b1].map((v,i)=>rng.next()<0.5?v:other.b1[i]));
+    b.w2=b.w2.map((v,i)=>rng.next()<0.5?v:other.w2[i]);
+    b.b2=Float64Array.from([...b.b2].map((v,i)=>rng.next()<0.5?v:other.b2[i]));
+    return b;
+  }
+}
+
+// ── 트랙 함수 ──
+function isWall(x,y) {
+  if(x<0||x>=trackW||y<0||y>=trackH) return true;
+  const i=(Math.floor(y)*trackW+Math.floor(x))*4;
+  return trackData[i]<50 && trackData[i+1]<50 && trackData[i+2]<50;
+}
+function isFinish(x,y) {
+  if(x<0||x>=trackW||y<0||y>=trackH) return false;
+  const i=(Math.floor(y)*trackW+Math.floor(x))*4;
+  return trackData[i]>200 && trackData[i+1]<100 && trackData[i+2]<100;
+}
+function castRay(sx,sy,angle) {
+  const dx=Math.cos(angle),dy=Math.sin(angle); let x=sx,y=sy;
+  for(let d=0;d<SENSOR_LEN;d++) { if(isWall(x,y)) return d; x+=dx; y+=dy; }
+  return SENSOR_LEN;
+}
+
+// ── 자동차 ──
+class Car {
+  constructor(id,sx,sy,nSensors,brain) {
+    this.id=id; this.x=sx; this.y=sy; this.sx=sx; this.sy=sy;
+    this.angle=-Math.PI/2; this.speed=MAX_SPEED; this.n=nSensors;
+    this.brain=brain||new CarBrain(nSensors);
+    this.sensorData=new Float64Array(nSensors);
+    this.verts=[[25,0],[-15,15],[-15,-15]];
+    this.crashed=false; this.finished=false; this.stagnated=false;
+    this.maxDist=0; this.cumDist=0; this.prevX=sx; this.prevY=sy;
+    this.stepCount=0; this.cpX=sx; this.cpY=sy; this.cpAngle=this.angle;
+    this.aliveSteps=0; this.avgSensorSum=0; this.steerPenalty=0;
+    this.sensorAngles=[]; this.sensorDists=[];
+  }
+  get stopped() { return this.crashed||this.finished||this.stagnated; }
+  fitness() {
+    let f=0;
+    if(CONFIG.rewards.has('max_dist')) f+=this.maxDist;
+    if(CONFIG.rewards.has('cumulative')) f+=this.cumDist*0.5;
+    if(CONFIG.rewards.has('survival')) f+=this.aliveSteps*0.3;
+    if(CONFIG.rewards.has('wall_avoid')) f+=this.avgSensorSum*0.5;
+    if(CONFIG.rewards.has('straight')) f+=Math.max(0,500-this.steerPenalty*0.5);
+    if(this.finished) f+=5000;
+    if(this.stagnated) f-=200;
+    return f;
+  }
+  update() {
+    if(this.stopped) return;
+    this.stepCount++; this.aliveSteps++;
+    if(this.stepCount%STAG_INTERVAL===0) {
+      const disp=Math.hypot(this.x-this.cpX,this.y-this.cpY);
+      const ad=Math.abs(this.angle-this.cpAngle);
+      if(disp<STAG_MIN_DISP && ad<STAG_MIN_ANGLE) { this.stagnated=true; return; }
+      this.cpX=this.x; this.cpY=this.y; this.cpAngle=this.angle;
+    }
+    const spread=this.n>1?Math.PI/(this.n-1):0;
+    const half=(this.n-1)/2;
+    this.sensorAngles=[]; this.sensorDists=[];
+    for(let i=0;i<this.n;i++) {
+      const a=this.angle+(i-half)*spread*0.8;
+      this.sensorAngles.push(a);
+      const d=castRay(this.x,this.y,a);
+      this.sensorData[i]=d/SENSOR_LEN;
+      this.sensorDists.push(d);
+    }
+    this.avgSensorSum+=this.sensorDists.reduce((a,b)=>a+b,0)/this.n;
+    // 충돌/결승선 체크
+    const nx=this.x+this.speed*Math.cos(this.angle);
+    const ny=this.y+this.speed*Math.sin(this.angle);
+    const pts=this.verts.map(v=>[
+      v[0]*Math.cos(this.angle)-v[1]*Math.sin(this.angle)+nx,
+      v[0]*Math.sin(this.angle)+v[1]*Math.cos(this.angle)+ny
+    ]);
+    let hitFinish=false, hitWall=false;
+    for(let i=0;i<pts.length;i++) {
+      const [x1,y1]=pts[i], [x2,y2]=pts[(i+1)%pts.length];
+      const dist=Math.hypot(x2-x1,y2-y1); const steps=Math.max(1,Math.floor(dist));
+      for(let j=0;j<=steps;j++) {
+        const t=j/steps; const cx=x1+(x2-x1)*t, cy=y1+(y2-y1)*t;
+        if(isFinish(cx,cy)) hitFinish=true;
+        if(isWall(cx,cy)) hitWall=true;
+      }
+    }
+    if(hitFinish) { this.finished=true; return; }
+    if(hitWall) { this.crashed=true; return; }
+    const prob=this.brain.forward(this.sensorData);
+    const steer=prob[1]-prob[0];
+    this.angle+=steer*0.15;
+    this.steerPenalty+=Math.abs(steer);
+    const cs=this.speed*(1-Math.abs(steer)*0.6);
+    this.x+=cs*Math.cos(this.angle); this.y+=cs*Math.sin(this.angle);
+    const sd=Math.hypot(this.x-this.prevX,this.y-this.prevY);
+    this.cumDist+=sd; this.prevX=this.x; this.prevY=this.y;
+    const ds=Math.hypot(this.x-this.sx,this.y-this.sy);
+    if(ds>this.maxDist) this.maxDist=ds;
+  }
+}
+
+// ── 시뮬레이션 상태 ──
+let rng;
+function createSim() {
+  rng = new SeededRNG(CONFIG.seed);
+  return {
+    gen:1, steps:0, cars:[], paused:false, speedMult:1, speedOpts:[1,2,5,10], speedIdx:0,
+    bestHist:[], avgHist:[], finishHist:[], startTime:Date.now(),
+    gaInfo:{pA:0,pB:0,nElite:0,nWeak:0,nCross:0,nStrong:0},
+    firstFinishGen:null,
+  };
+}
+
+function makeCars(brains) {
+  const sx=CONFIG.trackStartPos?CONFIG.trackStartPos[0]:trackW/2;
+  const sy=CONFIG.trackStartPos?CONFIG.trackStartPos[1]:trackH*0.85;
+  return Array.from({length:CONFIG.cars},(_,i)=>new Car(i+1,sx,sy,CONFIG.sensors,brains?brains[i]:null));
+}
+
+function nextGeneration() {
+  const cars=sim.cars;
+  const fitnesses=cars.map(c=>c.fitness());
+  const best=Math.max(...fitnesses), avg=fitnesses.reduce((a,b)=>a+b,0)/fitnesses.length;
+  sim.bestHist.push(best); sim.avgHist.push(avg);
+  sim.finishHist.push(cars.filter(c=>c.finished).length);
+
+  const sorted=[...cars].sort((a,b)=>b.fitness()-a.fitness());
+  const pA=sorted[0].brain, pB=(sorted[1]||sorted[0]).brain;
+  const n=CONFIG.cars;
+  const brains=[], nElite=Math.max(2,Math.floor(n*0.5));
+
+  for(let i=0;i<nElite;i++) brains.push((i%2===0?pA:pB).copy());
+  const nWeak=Math.max(1,Math.floor(n*0.2));
+  for(let i=0;i<nWeak;i++) brains.push((i%2===0?pA:pB).mutate(0.05,0.1));
+  const nCross=Math.max(1,Math.floor(n*0.2));
+  for(let i=0;i<nCross;i++) brains.push(pA.crossover(pB).mutate(0.15,0.2));
+  let nStrong=0;
+  while(brains.length<n) { brains.push((brains.length%2===0?pA:pB).mutate(0.3,0.4)); nStrong++; }
+
+  sim.gaInfo={pA:Math.round(sorted[0].fitness()),pB:Math.round((sorted[1]||sorted[0]).fitness()),nElite,nWeak,nCross,nStrong};
+  sim.cars=makeCars(brains);
+  sim.gen++; sim.steps=0;
+}
+
+// ── 렌더링 ──
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  if(!trackImg) return;
+  canvas.width=trackW; canvas.height=trackH;
+}
+
+function drawCar(car) {
+  const pts=car.verts.map(v=>[
+    v[0]*Math.cos(car.angle)-v[1]*Math.sin(car.angle)+car.x,
+    v[0]*Math.sin(car.angle)+v[1]*Math.cos(car.angle)+car.y
+  ]);
+  // 센서
+  if(!car.stopped && car.sensorAngles.length) {
+    for(let i=0;i<car.n;i++) {
+      const a=car.sensorAngles[i], d=car.sensorDists[i];
+      const t=d/SENSOR_LEN;
+      ctx.strokeStyle=`rgb(${255*(1-t)|0},${60*(1-t)+220*t|0},${60*(1-t)+80*t|0})`;
+      ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(car.x,car.y);
+      ctx.lineTo(car.x+d*Math.cos(a),car.y+d*Math.sin(a)); ctx.stroke();
+    }
+  }
+  // 본체
+  let color = car.finished?'#00d68f' : car.crashed?'#ff4757' : car.stagnated?'#ffa502' : '#4f8cff';
+  ctx.fillStyle=color; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // ID
+  ctx.fillStyle=car.crashed||car.stagnated?'#000':'#fff';
+  ctx.font='bold 11px "JetBrains Mono"';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(car.id,car.x,car.y);
+}
+
+function drawFrame() {
+  ctx.clearRect(0,0,trackW,trackH);
+  if(trackImg) ctx.drawImage(trackImg,0,0);
+  if(!sim) return;
+  sim.cars.forEach(drawCar);
+}
+
+// ── 패널 업데이트 ──
+// ── 패널 업데이트 ──
+function updateHUD() {
+  if(!sim) return;
+  document.getElementById('hud-gen').textContent=sim.gen;
+  document.getElementById('hud-step').textContent=sim.steps;
+  document.getElementById('hud-alive').textContent=sim.cars.filter(c=>!c.stopped).length;
+  document.getElementById('hud-finish').textContent=sim.cars.filter(c=>c.finished).length;
+  document.getElementById('hud-crash').textContent=sim.cars.filter(c=>c.crashed).length;
+
+  // [수정됨] 매 프레임마다 현재 통계와 시간을 실시간으로 렌더링합니다.
+  const fits=sim.cars.map(c=>c.fitness());
+  document.getElementById('stats-area').innerHTML=
+    `<div class="stat-row"><span class="label">최고 적합도</span><span class="value green">${Math.round(Math.max(...fits))}</span></div>`+
+    `<div class="stat-row"><span class="label">평균 적합도</span><span class="value blue">${Math.round(fits.reduce((a,b)=>a+b,0)/fits.length)}</span></div>`+
+    `<div class="stat-row"><span class="label">최고 거리</span><span class="value">${Math.round(Math.max(...sim.cars.map(c=>c.maxDist)))}px</span></div>`;
+  
+  const elapsed=Math.floor((Date.now()-sim.startTime)/1000);
+  const m=Math.floor(elapsed/60), s=elapsed%60;
+  document.getElementById('elapsed-time').textContent=`${m}:${String(s).padStart(2,'0')}`;
+}
+
+function updatePanel() {
+  if(!sim) return;
+  // 적합도 그래프 (무거운 연산이므로 세대가 바뀔 때만 실행)
+  drawChart('chart-fitness', sim.bestHist, sim.avgHist, 120);
+  // 완주 그래프
+  drawBarChart('chart-finish', sim.finishHist, CONFIG.cars, 70);
+  
+  // GA 구성
+  const g=sim.gaInfo, total=g.nElite+g.nWeak+g.nCross+g.nStrong;
+  if(total>0) {
+    document.getElementById('ga-comp').innerHTML=
+      `<div class="ga-bar" style="flex:${g.nElite};background:#00d68f">E${g.nElite}</div>`+
+      `<div class="ga-bar" style="flex:${g.nWeak};background:#ffa502">M${g.nWeak}</div>`+
+      `<div class="ga-bar" style="flex:${g.nCross};background:#6c5ce7">C${g.nCross}</div>`+
+      `<div class="ga-bar" style="flex:${g.nStrong};background:#ff4757">S${g.nStrong}</div>`;
+    document.getElementById('ga-details').innerHTML=
+      `<div class="stat-row"><span class="label">부모 A</span><span class="value blue">${g.pA}</span></div>`+
+      `<div class="stat-row"><span class="label">부모 B</span><span class="value blue">${g.pB}</span></div>`;
+  }
+
+  // 통계
+  const fits=sim.cars.map(c=>c.fitness());
+  document.getElementById('stats-area').innerHTML=
+    `<div class="stat-row"><span class="label">최고 적합도</span><span class="value green">${Math.round(Math.max(...fits))}</span></div>`+
+    `<div class="stat-row"><span class="label">평균 적합도</span><span class="value blue">${Math.round(fits.reduce((a,b)=>a+b,0)/fits.length)}</span></div>`+
+    `<div class="stat-row"><span class="label">최고 거리</span><span class="value">${Math.round(Math.max(...sim.cars.map(c=>c.maxDist)))}px</span></div>`;
+  // 시간
+  const elapsed=Math.floor((Date.now()-sim.startTime)/1000);
+  const m=Math.floor(elapsed/60), s=elapsed%60;
+  document.getElementById('elapsed-time').textContent=`${m}:${String(s).padStart(2,'0')}`;
+}
+
+function drawChart(canvasId, best, avg, h) {
+  const c=document.getElementById(canvasId); const cx=c.getContext('2d');
+  const w=c.width=c.parentElement.clientWidth-24; c.height=h;
+  cx.clearRect(0,0,w,h);
+  if(best.length<2) { cx.fillStyle='#8b8fa8'; cx.font='12px sans-serif'; cx.fillText('데이터 수집 중...',w/2-40,h/2); return; }
+  const all=[...best,...avg]; const mx=Math.max(...all)||1, mn=Math.min(0,...all);
+  const range=mx-mn||1;
+  const dx=w/Math.max(best.length-1,1);
+  // avg line
+  cx.strokeStyle='#18dcff'; cx.lineWidth=1; cx.beginPath();
+  avg.forEach((v,i)=>{ const x=i*dx, y=h-(v-mn)/range*h; i===0?cx.moveTo(x,y):cx.lineTo(x,y); });
+  cx.stroke();
+  // best line
+  cx.strokeStyle='#4f8cff'; cx.lineWidth=2; cx.beginPath();
+  best.forEach((v,i)=>{ const x=i*dx, y=h-(v-mn)/range*h; i===0?cx.moveTo(x,y):cx.lineTo(x,y); });
+  cx.stroke();
+}
+
+function drawBarChart(canvasId, data, max, h) {
+  const c=document.getElementById(canvasId); const cx=c.getContext('2d');
+  const w=c.width=c.parentElement.clientWidth-24; c.height=h;
+  cx.clearRect(0,0,w,h);
+  if(!data.length) return;
+  const display=data.slice(-50);
+  const bw=Math.max(2, w/Math.max(display.length,1)-1);
+  display.forEach((v,i)=>{
+    const ratio=v/max; const bh=ratio*h;
+    cx.fillStyle=ratio>=1?'#00d68f':ratio>0?'#4f8cff':'#2e3347';
+    cx.fillRect(i*(bw+1), h-bh, bw, bh);
+  });
+}
+
+// ── 컨트롤 ──
+function togglePause() {
+  if(!sim) return;
+  sim.paused=!sim.paused;
+  const btn=document.getElementById('btn-pause');
+  btn.textContent=sim.paused?'▶ 재개':'⏸ 일시정지';
+  btn.classList.toggle('active',sim.paused);
+}
+function cycleSpeed() {
+  if(!sim) return;
+  sim.speedIdx=(sim.speedIdx+1)%sim.speedOpts.length;
+  sim.speedMult=sim.speedOpts[sim.speedIdx];
+  document.getElementById('btn-speed').textContent=`×${sim.speedMult}`;
+}
+function resetSim() {
+  if(!sim) return;
+  rng=new SeededRNG(CONFIG.seed);
+  sim=createSim(); sim.cars=makeCars();
+  updatePanel();
+}
+function backToConfig() {
+  if(animId) cancelAnimationFrame(animId);
+  document.getElementById('sim-screen').style.display='none';
+  document.getElementById('config-screen').style.display='flex';
+}
+
+// ── 메인 루프 ──
+function gameLoop() {
+  if(!sim) { animId=requestAnimationFrame(gameLoop); return; }
+  if(!sim.paused) {
+    for(let s=0;s<sim.speedMult;s++) {
+      sim.steps++;
+      sim.cars.forEach(c=>c.update());
+      const allStopped=sim.cars.every(c=>c.stopped);
+      const finCount=sim.cars.filter(c=>c.finished).length;
+      if(sim.steps>=MAX_STEPS || allStopped) {
+        if(finCount>0 && !sim.firstFinishGen) sim.firstFinishGen=sim.gen;
+        if(finCount>=CONFIG.cars) {
+          sim.bestHist.push(Math.max(...sim.cars.map(c=>c.fitness())));
+          sim.avgHist.push(sim.cars.map(c=>c.fitness()).reduce((a,b)=>a+b,0)/sim.cars.length);
+          sim.finishHist.push(finCount);
+          sim.paused=true;
+          document.getElementById('btn-pause').textContent='🎉 ALL FINISHED!';
+          break;
+        }
+        nextGeneration();
+        break;
+      }
+    }
+  }
+  drawFrame();
+  updateHUD();
+  if(sim.gen !== (sim._lastPanelGen||0)) { updatePanel(); sim._lastPanelGen=sim.gen; }
+  animId=requestAnimationFrame(gameLoop);
+}
+
+// ── 시작 ──
+function startSimulation() {
+  if(!CONFIG.trackUrl) { alert('트랙을 선택하거나 업로드해주세요!'); return; }
+
+  // 보상 태그 표시
+  const tagsEl=document.getElementById('active-rewards');
+  tagsEl.innerHTML='';
+  REWARDS.filter(r=>CONFIG.rewards.has(r.id)).forEach(r=>{
+    tagsEl.innerHTML+=`<span class="reward-tag" style="background:${r.color}22;color:${r.color}">${r.icon} ${r.name}</span>`;
+  });
+
+  const TRACK_START = {
+    'track01.png': [130, 700],
+    'track02.png': [450, 700],
+    'track03.png': [1320, 700],
+  };
+
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    trackImg = img; trackW = img.width; trackH = img.height;
+    
+    // 트랙 픽셀 데이터 추출
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = trackW; offCanvas.height = trackH;
+    const offCtx = offCanvas.getContext('2d');
+    offCtx.drawImage(img,0,0);
+    trackData = offCtx.getImageData(0,0,trackW,trackH).data;
+
+    resizeCanvas();
+    document.getElementById('config-screen').style.display = 'none';
+    document.getElementById('sim-screen').style.display = 'block';
+
+    // 핵심 수정 부분: 캐싱 로직(if)을 없애고 매번 트랙 이름에 따라 새로 할당
+    CONFIG.trackStartPos = TRACK_START[CONFIG.trackName] || [trackW / 2, trackH * 0.85];
+
+    sim = createSim();
+    sim.cars = makeCars();
+    document.getElementById('btn-pause').textContent='⏸ 일시정지';
+    gameLoop();
+  };
+  img.src = CONFIG.trackUrl;
+}
+
+</script>
+</body>
+</html>

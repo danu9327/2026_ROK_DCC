@@ -880,6 +880,13 @@ MAP_PATHS = [
 ]
 MAP_NAMES = ["Track 01", "Track 02", "Track 03"]
 
+# 각 맵별 고정 시작 지점 (x, y) — 트랙에 맞게 조정하세요
+MAP_START_POS = [
+    (130, 700),   # Track 01 시작 지점
+    (350, 700),   # Track 02 시작 지점
+    (1320, 700),   # Track 03 시작 지점
+]
+
 
 class ConfigPage3:
     def __init__(self, screen, fonts):
@@ -934,6 +941,9 @@ class ConfigPage3:
     def get_selected_path(self):
         return MAP_PATHS[self.selected_idx]
 
+    def get_start_pos(self):
+        return MAP_START_POS[self.selected_idx]
+
     def draw(self):
         self.screen.fill(PANEL_BG)
         f_xl, f_lg, f_md, f_sm = self.fonts
@@ -978,6 +988,20 @@ class ConfigPage3:
                                      self.thumbnails[i].get_width(),
                                      self.thumbnails[i].get_height())
             pygame.draw.rect(self.screen, border_color, thumb_rect, 1)
+
+            # 시작 지점 표시
+            if available:
+                sp = MAP_START_POS[i]
+                mw, mh = self.map_sizes[i]
+                if mw > 0 and mh > 0:
+                    thumb_w_actual = self.thumbnails[i].get_width()
+                    thumb_h_actual = self.thumbnails[i].get_height()
+                    sx = thumb_x + int(sp[0] / mw * thumb_w_actual)
+                    sy = thumb_y + int(sp[1] / mh * thumb_h_actual)
+                    pygame.draw.circle(self.screen, GREEN, (sx, sy), 6)
+                    pygame.draw.circle(self.screen, BLACK, (sx, sy), 6, 2)
+                    st_label = f_sm.render("START", True, GREEN)
+                    self.screen.blit(st_label, (sx + 8, sy - 8))
 
             name = MAP_NAMES[i]
             if not available:
@@ -1034,7 +1058,7 @@ class ConfigPage3:
 # 시뮬레이션 세션 (대폭 개선)
 # ====================================================================
 class Session:
-    def __init__(self, screen, fonts, num_cars, num_sensors, reward_ids, seed=42):
+    def __init__(self, screen, fonts, num_cars, num_sensors, reward_ids, seed=42, start_pos=None):
         self.screen = screen
         self.fonts = fonts
         self.num_cars = num_cars
@@ -1042,10 +1066,9 @@ class Session:
         self.reward_ids = reward_ids
         self.seed = seed
         self.generation = 1
-        self.state = STATE_SETUP
         self.steps = 0
         self.cars = []
-        self.start_pos = (0, 0)
+        self.start_pos = start_pos if start_pos else (0, 0)
         self.best_brain = None
         self.first_finish_gen = None
         self.paused = False
@@ -1086,6 +1109,15 @@ class Session:
         cx = TRACK_W // 2
         self.btn_restart = pygame.Rect(cx - 130, HEIGHT // 2 + 80, 260, 55)
         self.btn_quit = pygame.Rect(cx - 130, HEIGHT // 2 + 150, 260, 55)
+
+        # 시작 지점이 지정되어 있으면 바로 시뮬레이션 시작
+        if start_pos:
+            self.state = STATE_SIMULATING
+            np.random.seed(self.seed)
+            self.cars = self._make_cars(start_pos[0], start_pos[1])
+            self.start_time = time.time()
+        else:
+            self.state = STATE_SETUP
 
     def _make_cars(self, sx, sy, brains=None):
         cars = []
@@ -1215,8 +1247,15 @@ class Session:
         self.finish_history = []
         self.gen_stats = GenerationStats()
         self.best_trajectory = []
-        self.state = STATE_SETUP
-        self.start_time = None
+        # 고정 시작 지점이 있으면 바로 시뮬레이션 재시작
+        if self.start_pos and self.start_pos != (0, 0):
+            self.state = STATE_SIMULATING
+            np.random.seed(self.seed)
+            self.cars = self._make_cars(self.start_pos[0], self.start_pos[1])
+            self.start_time = time.time()
+        else:
+            self.state = STATE_SETUP
+            self.start_time = None
 
     def update(self):
         if self.state != STATE_SIMULATING or self.paused:
@@ -1711,7 +1750,8 @@ def main():
 
         # 시뮬레이션
         session = Session(screen, fonts, page1.num_cars,
-                          page1.num_sensors, page2.selected, page1.seed)
+                          page1.num_sensors, page2.selected, page1.seed,
+                          start_pos=page3.get_start_pos())
         running_session = True
         while running_session:
             for ev in pygame.event.get():
