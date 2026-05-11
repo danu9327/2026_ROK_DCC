@@ -3,3 +3,6 @@ numpy
 matplotlib
 flask
 pyngrok
+torch
+fastapi
+uvicorn
