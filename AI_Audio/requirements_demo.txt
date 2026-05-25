@@ -1,0 +1,30 @@
+# 음향 AI 인터랙티브 데모 — 필수 패키지
+# 설치 명령: pip install -r requirements_demo.txt
+
+# 핵심 오디오
+librosa>=0.10.0
+soundfile>=0.12.1
+numpy>=1.24.0
+
+# 시각화
+matplotlib>=3.7.0
+Pillow>=10.0.0
+
+# 웹 UI
+gradio>=4.0.0
+
+# TTS (인터넷 필요)
+edge-tts>=6.1.0
+
+# 음성 인식 (Whisper)
+openai-whisper>=20231117
+# 또는 빠른 버전: faster-whisper>=0.10.0
+
+# PyTorch (Whisper + Demucs 공통 의존성)
+# CUDA 없으면: pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+# CUDA 있으면: pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+torch>=2.0.0
+torchaudio>=2.0.0
+
+# 음원 분리 — 딥러닝 보컬/반주 분리 (선택)
+# demucs>=4.0.0

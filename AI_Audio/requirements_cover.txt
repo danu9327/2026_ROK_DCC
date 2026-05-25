@@ -1,0 +1,30 @@
+# ==========================================
+# AI Cover Pipeline Requirements
+# [필수] OS 레벨에 FFmpeg가 설치되어 있어야 합니다.
+# (Ubuntu: apt install ffmpeg / Win/Mac: ffmpeg.org)
+# ==========================================
+
+# 1. PyTorch (CUDA 12.1 지정)
+# CPU 환경에서 빌드하는 경우 아래 URL을 지우고 진행하세요.
+# --extra-index-url https://download.pytorch.org/whl/cu121
+# torch>=2.0.0
+# torchaudio>=2.0.0
+
+# 2. 핵심 오디오 프로세싱
+librosa>=0.10.0
+soundfile>=0.12.1
+numpy==1.22.0       # TTS 호환성을 위한 하향 고정 (필수)
+
+# 3. AI 모델 (음성 인식, 음원 분리, 합성)
+openai-whisper>=20231117
+demucs>=4.0.0
+TTS==0.22.0
+
+# 4. 오디오 믹싱 및 유틸리티
+pydub>=0.25.1
+audioread>=3.0.0
+
+# 5. 시각화 및 웹 UI
+matplotlib>=3.7.0
+Pillow>=10.0.0
+gradio>=4.0.0
