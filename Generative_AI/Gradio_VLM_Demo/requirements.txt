@@ -1,0 +1,26 @@
+# VLM 이미지 생성 실습 - RTX 5090 서버용
+
+# Core
+torch>=2.2.0
+torchvision>=0.17.0
+torchaudio>=2.2.0
+
+# Diffusion
+diffusers>=0.30.0
+accelerate>=0.30.0
+safetensors>=0.4.3
+transformers>=4.43.0
+
+# LoRA / Fine-tuning
+peft>=0.11.0
+
+# 4-bit quantization (대형 텍스트 모델용)
+bitsandbytes>=0.43.0
+
+# Gradio
+gradio>=4.40.0
+
+# Utilities
+Pillow>=10.3.0
+numpy>=1.26.0
+matplotlib>=3.8.0
