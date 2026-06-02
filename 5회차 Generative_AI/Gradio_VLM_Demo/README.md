@@ -2,7 +2,7 @@
 RTX 5090 서버에서 실행하는 Gradio 기반 VLM 이미지 생성 데모
 
 # 서버 주소
-123.456.789.com
+https://d5299533108c29a66a.gradio.live
 
 ---
 
