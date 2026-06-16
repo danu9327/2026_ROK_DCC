@@ -64,7 +64,7 @@ python server.py
 cloudflared tunnel --url http://localhost:9000
 ```
 
-`https://*.trycloudflare.com` 
+`https://concerns-kenneth-plastic-thesaurus.trycloudflare.com` 
 
 ### Step 4. 리더보드 화면 띄우기 (강사 PC, 빔/대형 모니터)
 
