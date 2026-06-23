@@ -23,7 +23,7 @@
 ## ⚠️ 강사 준비물
 
 - 학생들에게 cloudflared URL 공유
-URL: https://reducing-behind-tube-analysis.trycloudflare.com
+URL: https://sold-cleaner-priorities-marcus.trycloudflare.com
 ## 🛠️ 트러블슈팅
 
 | 증상 | 원인 | 해결 |
