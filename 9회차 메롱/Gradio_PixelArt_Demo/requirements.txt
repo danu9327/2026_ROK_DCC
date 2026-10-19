@@ -1,0 +1,27 @@
+# 귀여운 픽셀아트 Image-to-Image 실습 - RTX 5090 서버용
+# RTX 5090(Blackwell)은 CUDA 12.8 빌드 torch 필요:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+
+# Core
+torch>=2.7.0
+torchvision>=0.22.0
+
+# Diffusion (FluxKontextPipeline은 0.35부터)
+diffusers>=0.35.0
+accelerate>=0.30.0
+safetensors>=0.4.3
+transformers>=4.43.0
+huggingface_hub>=0.34.0
+sentencepiece>=0.2.0
+protobuf>=4.25.0
+
+# LoRA 로딩
+peft>=0.11.0
+
+# Gradio
+gradio>=4.40.0,<6
+
+# Utilities
+Pillow>=10.3.0
+numpy>=1.26.0
+opencv-python-headless>=4.9.0
